@@ -157,6 +157,17 @@ local csi = {
 
 local pguid
 
+function NP:SearchForFrame(guid, raidIcon, name)
+	local frameForSearch
+	for frame in C_NamePlateManager.EnumerateActiveNamePlates() do
+        if frame._unit and UnitGUID(frame._unit) ==guid then
+			return frame
+            -- self:ApplyFrameOptions(frame.UnitFrame, frame.UnitFrame.unit)
+        end
+    end
+end
+
+
 function DAN:GetFontPath(fontName)
 	local fontPath = LSM:Fetch("font", fontName) or "Fonts\\FRIZQT__.TTF"
 	return fontPath
@@ -708,7 +719,8 @@ function DAN:PLAYER_ENTERING_WORLD(...)
 end
 
 function DAN:PLAYER_TALENT_UPDATE(event)
-	if self.activeSpec ~= C_Talent.GetSpecInfoCache().activeTalentGroup then
+	
+	if C_Talent and self.activeSpec ~= C_Talent.GetSpecInfoCache().activeTalentGroup then
 		self.db = E.db.DmgAtNameplates
 		self.activeSpec = C_Talent.GetSpecInfoCache().activeTalentGroup
 	end
@@ -728,7 +740,7 @@ end
 
 function DAN:Initialize()
 	EP:RegisterPlugin(DAN.AddOnName, self.DmgAtNameplatesOptions)
-	self.activeSpec = C_Talent.GetSpecInfoCache() and C_Talent.GetSpecInfoCache().activeTalentGroup or 1
+	self.activeSpec = C_Talent and C_Talent.GetSpecInfoCache() and C_Talent.GetSpecInfoCache().activeTalentGroup or 1
 	-- self.db = E.db
 	self:RegisterEvent("PLAYER_ENTERING_WORLD")
 	self:RegisterEvent("PLAYER_TALENT_UPDATE")
