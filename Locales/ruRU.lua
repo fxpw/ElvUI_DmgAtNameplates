@@ -82,7 +82,9 @@ L["ttphtdesc"] = "Исцеление В персонажа"
 L["petToTargetDamageText"] = "Урон ОТ пета"
 L["petttdtdesc"] = "Урон ОТ пета"
 L["petToTargetHealText"] = "Хил От пета"
-L["pettthtdesc"] = "Хил От пета"
+L["DispelTab"] = "Рассеивание"
+L["MissTab"] = "Промахи"
+L["InterruptTab"] = "Прерывания"
 
 
 -- L["showtargetdt"] = "Отображение урона на плейтах"
