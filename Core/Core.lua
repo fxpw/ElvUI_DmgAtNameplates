@@ -167,11 +167,11 @@ function DAN:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag)
 	-- playerToUnitEvent = isPlayerEvent and tguid ~= pguid
 	-- unitToPlayerEvent = not isPlayerEvent and tguid == pguid
 	if playerToUnitEvent then
-		return NP:SearchForFrame(tguid,_,tname) or (isTargetEvent and self.ElvUI_ToTargetFrame)
+		return (tguid and NP.PlateGUID[tguid]) or (isTargetEvent and self.ElvUI_ToTargetFrame)
 	elseif unitToPlayerEvent then
 		return self.ElvUI_ToPlayerFrame
 	elseif isPetEvent then
-		return NP:SearchForFrame(tguid,_,tname) or (isTargetEvent and self.ElvUI_ToTargetFrame)
+		return (tguid and NP.PlateGUID[tguid]) or (isTargetEvent and self.ElvUI_ToTargetFrame)
 	elseif playerToPlayerEvent then
 		return self.ElvUI_ToPlayerFrame
 	end
