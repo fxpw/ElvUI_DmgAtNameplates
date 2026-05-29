@@ -629,10 +629,28 @@ function DAN:SpellInterruptEvent(f,  spllname, splld, intrspll)
 end
 
 local BITMASK_PETS = COMBATLOG_OBJECT_TYPE_PET + COMBATLOG_OBJECT_TYPE_GUARDIAN
+
+function DAN:IsSourceMyPet(whoguid, whoflag)
+	if (band(whoflag, BITMASK_PETS) > 0) and (band(whoflag, COMBATLOG_OBJECT_AFFILIATION_MINE) > 0) then
+		return true
+	end
+	if pguid and whoguid == pguid then
+		return false
+	end
+	if band(whoflag, COMBATLOG_OBJECT_AFFILIATION_MINE) > 0 and UnitExists('pet') then
+		local petGuid = UnitGUID('pet')
+		if petGuid and whoguid == petGuid then
+			return true
+		end
+	end
+	return false
+end
+
 -- local args1,args2,subevent,whoguid,whoname,whoflag,tguid,tname,tflag,spellid,spellname,spellschool,amount,overHeal_Kill,args15,args16,args17,args18,dmgCrit,args20
 
 function DAN:FilterEvent(args1,args2,subevent,whoguid,whoname,whoflag,tguid,tname,tflag,spellid,spellname,spellschool,amount,overHeal_Kill,args15,args16,args17,args18,dmgCrit)
-	if not self.db or not self.db.enable then return end
+	local db = self.db or E.db.DmgAtNameplates
+	if not db or not db.enable then return end
 	-- print("rab")
 	-- args1,args2,subevent,whoguid,whoname,whoflag,tguid,tname,tflag,spellid,spellname,spellschool,amount,overHeal_Kill,args15,args16,args17,args18,dmgCrit,args20 =...
 	-- local vnt1,tm2,sbvnt3,guidwhcst4,whcst5,flags6,tgtguid7,tgtcst8,_,splld10,spllname11,schl12,slldmg13,infodis14,intrspll15,healcrt16,_,_,crt19,_,_,_,_,_,_,_ = ...
@@ -642,54 +660,54 @@ function DAN:FilterEvent(args1,args2,subevent,whoguid,whoname,whoflag,tguid,tnam
 	-- end
 	isPlayerEvent = pguid == whoguid;
 	isTargetEvent = UnitExists("target") and (UnitGUID("target") == tguid);
-	isPetEvent = (bit.band(whoflag, BITMASK_PETS) > 0) and (bit.band(whoflag, COMBATLOG_OBJECT_AFFILIATION_MINE) > 0);
+	isPetEvent = self:IsSourceMyPet(whoguid, whoflag)
 	playerToUnitEvent = isPlayerEvent and (tguid ~= pguid);
 	unitToPlayerEvent = not isPlayerEvent and (tguid == pguid);
 	unitToUnitEvent = not isPlayerEvent and (tguid ~= pguid);
 	playerToPlayerEvent = isPlayerEvent and (tguid == pguid);
 	targetUnitType = self:GetUnitTypeByFlag(tflag);
 
-	if playerToUnitEvent or (unitToUnitEvent and self.db.showFromAnotherPlayer) then -- player to target or unit to target
-		if dse[subevent] and self.db.playerToTargetDamageText then
-			self:DamageEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), spellname, amount, spellschool, dmgCrit, spellid, whoguid, whoname)
-		elseif subevent == "SWING_DAMAGE" and self.db.playerToTargetDamageText  then
-			self:DamageEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), AutoAttack, spellid, 1, dmgCrit, 6603, whoguid, whoname)
-		elseif mse[subevent] and self.db.playerToTargetDamageText  then
-			self:MissEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), spellname, amount, spellid)
-		elseif  subevent == "SPELL_DISPEL" and self.db.playerToTargetDamageText  then
-			self:DispelEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), spellname, overHeal_Kill, amount)
-		elseif hse[subevent] and self.db.playerToTargetHealText then
+	if isPetEvent then
+		if dse[subevent] and db.petToTargetDamageText then
+			self:DamageEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), spellname, amount, "pet", dmgCrit, spellid, isPlayerEvent, whoname)
+		elseif subevent == "SWING_DAMAGE" and db.petToTargetDamageText then
+			self:DamageEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), AutoAttackPet, spellid, "pet", dmgCrit, 315235, isPlayerEvent, whoname)
+		elseif mse[subevent] and db.petToTargetDamageText then
+			self:MissEventPet(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), spellname, amount, spellid)
+		elseif hse[subevent] and db.petToTargetHealText then
 			self:HealEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), spellname, amount, args16, spellid,overHeal_Kill)
-		elseif csi[subevent] and self.db.playerToTargetDamageText then
+		end
+	elseif playerToUnitEvent or (unitToUnitEvent and db.showFromAnotherPlayer) then -- player to target or unit to target
+		if dse[subevent] and db.playerToTargetDamageText then
+			self:DamageEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), spellname, amount, spellschool, dmgCrit, spellid, whoguid, whoname)
+		elseif subevent == "SWING_DAMAGE" and db.playerToTargetDamageText  then
+			self:DamageEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), AutoAttack, spellid, 1, dmgCrit, 6603, whoguid, whoname)
+		elseif mse[subevent] and db.playerToTargetDamageText  then
+			self:MissEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), spellname, amount, spellid)
+		elseif  subevent == "SPELL_DISPEL" and db.playerToTargetDamageText  then
+			self:DispelEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), spellname, overHeal_Kill, amount)
+		elseif hse[subevent] and db.playerToTargetHealText then
+			self:HealEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), spellname, amount, args16, spellid,overHeal_Kill)
+		elseif csi[subevent] and db.playerToTargetDamageText then
 			self:SpellInterruptEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), spellname,spellid,overHeal_Kill)
-		elseif subevent == "SWING_MISSED" and self.db.playerToTargetDamageText then
+		elseif subevent == "SWING_MISSED" and db.playerToTargetDamageText then
 			self:MissEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), AutoAttack, AutoAttack , 6603)
 		end
 	elseif unitToPlayerEvent or isPlayerEvent then
-		if dse[subevent] and self.db.targetToPlayerDamageText then
+		if dse[subevent] and db.targetToPlayerDamageText then
 			self:DamageEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), spellname, amount, spellschool, dmgCrit, spellid, whoguid, whoname)
-		elseif subevent == "SWING_DAMAGE" and self.db.targetToPlayerDamageText then
+		elseif subevent == "SWING_DAMAGE" and db.targetToPlayerDamageText then
 			self:DamageEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), AutoAttack, spellid, 1, dmgCrit, 660, whoguid, whoname)
-		elseif mse[subevent] and self.db.targetToPlayerDamageText then
+		elseif mse[subevent] and db.targetToPlayerDamageText then
 			self:MissEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), spellname, amount, spellid)
-		elseif  subevent == "SPELL_DISPEL" and self.db.targetToPlayerDamageText then
+		elseif  subevent == "SPELL_DISPEL" and db.targetToPlayerDamageText then
 			self:DispelEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), spellname, overHeal_Kill, amount)
-		elseif hse[subevent] and self.db.targetToPlayerHealText then
+		elseif hse[subevent] and db.targetToPlayerHealText then
 			self:HealEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), spellname, amount, args16, spellid,overHeal_Kill)
-		elseif csi[subevent] and self.db.targetToPlayerDamageText then
+		elseif csi[subevent] and db.targetToPlayerDamageText then
 			self:SpellInterruptEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), spellname,spellid,overHeal_Kill)
-		elseif subevent == "SWING_MISSED" and self.db.targetToPlayerDamageText then
+		elseif subevent == "SWING_MISSED" and db.targetToPlayerDamageText then
 			self:MissEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), AutoAttack, AutoAttack , 6603)
-		end
-	elseif isPetEvent then
-		if dse[subevent] and self.db.petToTargetDamageText  then
-			self:DamageEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), spellname, amount, "pet", dmgCrit, spellid, isPlayerEvent, whoname)
-		elseif subevent == "SWING_DAMAGE" and self.db.petToTargetDamageText then
-			self:DamageEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), AutoAttackPet, spellid, "pet", dmgCrit, 315235, isPlayerEvent, whoname)
-		elseif mse[subevent] and self.db.petToTargetDamageText then
-			self:MissEventPet(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), spellname, amount, spellid)
-		elseif hse[subevent] and self.db.petToTargetHealText then
-			self:HealEvent(self:GetFrame(whoguid,whoname,whoflag,tguid,tname,tflag), spellname, amount, args16, spellid,overHeal_Kill)
 		end
 	end
 end
