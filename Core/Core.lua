@@ -319,7 +319,7 @@ local function AnimationOnUpdate()
 
 				local frame = fontString:GetParent()
 				local currentStrata = frame:GetFrameStrata()
-				local strataRequired = "BACKGROUND"
+				local strataRequired = "MEDIUM"
 				if currentStrata ~= strataRequired then
 					frame:SetFrameStrata(strataRequired)
 				end
